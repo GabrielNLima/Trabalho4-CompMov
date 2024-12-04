@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "743062515648",
+    "project_id": "trab4-games",
+    "storage_bucket": "trab4-games.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:743062515648:android:689661587cd6dacdaca225",
+        "android_client_info": {
+          "package_name": "com.example.trab4"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgvbRDbBR57qE9nU7E3FrR830DdBl-S8g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
