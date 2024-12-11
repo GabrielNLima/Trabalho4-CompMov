@@ -1,4 +1,6 @@
 # Miscellaneous
+.firebase.json
+.firebase_options.dart
 *.class
 *.log
 *.pyc

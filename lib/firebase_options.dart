@@ -26,7 +26,10 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        return ios;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for ios - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -50,19 +53,10 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBgvbRDbBR57qE9nU7E3FrR830DdBl-S8g',
-    appId: '1:743062515648:android:689661587cd6dacdaca225',
-    messagingSenderId: '743062515648',
-    projectId: 'trab4-games',
-    storageBucket: 'trab4-games.firebasestorage.app',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDlHyg5FxpQ2_y-7cF2CWqqaFMxT99yUXQ',
-    appId: '1:743062515648:ios:a285d7ebbdd3c781aca225',
-    messagingSenderId: '743062515648',
-    projectId: 'trab4-games',
-    storageBucket: 'trab4-games.firebasestorage.app',
-    iosBundleId: 'com.example.trab4',
+    apiKey: 'AIzaSyDkhSA4vPAzCkWtlYt6x8UQwC7l3o2L_30',
+    appId: '1:614015806192:android:105365ea3b9da4d9a2f035',
+    messagingSenderId: '614015806192',
+    projectId: 'apk-games-gabrielm',
+    storageBucket: 'apk-games-gabrielm.firebasestorage.app',
   );
 }

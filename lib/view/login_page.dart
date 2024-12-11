@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:trab4/components/my_button.dart';
 import 'package:trab4/components/my_textfield.dart';
@@ -12,32 +13,33 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final userNameController = TextEditingController();
-
   final passwordController = TextEditingController();
 
-  void signUserIn() async{
-    showDialog(
-      context: context, 
-      builder: (context){
-        return const Center(child: CircularProgressIndicator());
+  void signUserIn() async {
+    // showDialog(
+    //   context: context,
+    //   builder: (context) {
+    //     return const Center(child: CircularProgressIndicator());
+    //   },
+    // );
+    try{
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: userNameController.text,
+        password: passwordController.text
+      );
+      Navigator.pop(context);
+    }on FirebaseAuthException catch(e) {
+      print(e.code);
+      if(e.code == 'invalid-credential') {
+        // Navigator.pop(context);
+        showDialog(
+          context: context,
+          builder: (context) {
+            return const AlertDialog(title: Text('Usuário ou senha Incorretas'));
+          },
+        );
       }
-    );
-
-    // try{
-    // await FirebaseAuth.instance.signInWithEmailAndPassword(
-    //   email: userNameController.text, 
-    //   password: passwordController.text);
-    // Navigator.pop(context);
-    // }on FirebaseAuthException catch (e){
-    //   print(e.code);
-    //   if(e.code == 'invalid-credential'){
-    //     Navigator.pop(context);
-    //     showDialog(context: context, builder: (context){
-    //       return const AlertDialog(title: Text('Usuário ou senha Incorretas!'));
-    //     });
-    //   }
-    // }
-    
+    }
   }
 
   @override
@@ -57,24 +59,22 @@ class _LoginPageState extends State<LoginPage> {
                   width: 120,
                 ),
                 const SizedBox(height: 50.0),
-                Text(
+                const Text(
                   'Seja Bem Vindo(a)',
                   style: TextStyle(color: Colors.black, fontSize: 25.0, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 25.0),
                 MyTextfield(
                   controller: userNameController, 
-                  hintText: "Entrar", 
+                  hintText: "E-mail", 
                   obscureText: false),
-                
                 const SizedBox(height: 15.0),
                 MyTextfield(
                   controller: passwordController, 
                   hintText: "Senha", 
                   obscureText: true),
-
                 const SizedBox(height: 15.0),
-                Padding(
+                const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 25.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -88,7 +88,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 15.0),
                 MyButton(onTap: signUserIn, text: "Entrar"),
-
                 const SizedBox(height: 25.0),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

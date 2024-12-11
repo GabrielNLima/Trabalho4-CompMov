@@ -16,7 +16,7 @@ class AuthService {
     } else if (passwordController.text != confirmPasswordController.text) {
       showErrorAlert(context, "As senhas não conferem");
     } else {
-      showLoadingAlert(context);
+      // showLoadingAlert(context);
 
       try {
         await FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -58,7 +58,7 @@ class AuthService {
               onPressed: () {
                 Navigator.pop(context);
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(255, 112, 13, 129)),
               child: const Text("Ok"),
             ),
           ],

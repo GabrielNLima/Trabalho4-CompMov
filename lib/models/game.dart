@@ -3,9 +3,8 @@ class Carro {
   final String name;
   final String genre;
   final String hours;
-  final String rating;
-  final DateTime purchaseDate;
-  final String? img;
+  final double rating;
+  final String purchaseDate;
   final String userId;
 
   Carro({
@@ -15,7 +14,6 @@ class Carro {
     required this.hours,
     required this.rating,
     required this.purchaseDate,
-    this.img,
     required this.userId,
   });
 }

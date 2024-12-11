@@ -1,7 +1,8 @@
-import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:trab3/helpers/game_helper.dart';
-import 'package:trab3/view/game_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:trab4/service/game_service.dart';
+import 'package:trab4/view/game_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,21 +12,17 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  GameHelper helper = GameHelper();
-  List<dynamic> games = [];
+  final GameService _gameService = GameService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  @override
-  void initState() {
-    super.initState();
-    getAllGames();
-  }
+  Stream<QuerySnapshot> _getGames() {
+    final userId = _auth.currentUser?.uid;
 
-  void getAllGames() {
-    helper.getAllGames().then((list) {
-      setState(() {
-        games = list;
-      });
-    });
+    return _firestore
+        .collection('games')
+        .where('userId', isEqualTo: userId)
+        .snapshots();
   }
 
   @override
@@ -45,26 +42,104 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Color.fromARGB(255, 112, 13, 129)),
+            onPressed: _logout,
+          ),
+        ],
       ),
       backgroundColor: const Color.fromARGB(255, 112, 13, 129),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          showGamePage();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => GamePage(gameId: ''),
+            ),
+          );
         },
         child: const Icon(Icons.add),
         backgroundColor: Colors.white,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(10.0),
-        itemCount: games.length,
-        itemBuilder: (context, index) {
-          return gameCard(context, index);
-        },
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder(
+              stream: _gameService
+                  .readGames(FirebaseAuth.instance.currentUser?.uid ?? ''),
+              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('Nenhum jogo encontrado.'));
+                }
+
+                final games = snapshot.data!.docs;
+                return ListView.builder(
+                  padding: const EdgeInsets.all(10.0),
+                  itemCount: games.length,
+                  itemBuilder: (context, index) {
+                    return gameCard(context, index, games);
+                  },
+                );
+                // return ListView.builder(
+                //   itemCount: games.length,
+                //   itemBuilder: (context, index) {
+                //     final game = games[index];
+                //     final docId = game.id;
+                //     final name = game['name'];
+                //     final genre = game['genre'];
+                //     final hours = game['hours'];
+                //     final rating = game['rating'];
+                //     final purchaseDate = game['purchaseDate'];
+
+                //     return ListTile(
+                //       title: Text('$name'),
+                //       trailing: Row(
+                //         mainAxisSize: MainAxisSize.min,
+                //         children: [
+                //           IconButton(
+                //             icon: Icon(Icons.edit),
+                //             onPressed: () {
+                //               Navigator.push(
+                //                 context,
+                //                 MaterialPageRoute(
+                //                   builder: (context) =>
+                //                       GamePage(gameId: docId),
+                //                 ),
+                //               );
+                //             },
+                //           ),
+                //           IconButton(
+                //             icon: Icon(Icons.delete),
+                //             onPressed: () {
+                //               _deleteGame(docId);
+                //             },
+                //           ),
+                //         ],
+                //       ),
+                //     );
+                //   },
+                // );
+              },
+            ),
+          )
+        ],
       ),
     );
   }
 
-  Widget gameCard(BuildContext context, int index) {
+  Widget gameCard(BuildContext context, int index, List games) {
+    final game = games[index];
+    final docId = game.id;
+    final name = game['name'];
+    final genre = game['genre'];
+    final hours = game['hours'];
+    final rating = game['rating'];
+    final purchaseDate = game['purchaseDate'];
     return GestureDetector(
       child: Card(
         child: Padding(
@@ -77,7 +152,7 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      "${games[index].name}",
+                      "$name",
                       style: const TextStyle(
                         fontSize: 22.0,
                         fontWeight: FontWeight.bold,
@@ -85,19 +160,19 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     Text(
-                      "Gênero: ${games[index].genre}",
+                      "Gênero: $genre",
                       style: const TextStyle(fontSize: 18.0),
                     ),
                     Text(
-                      "Horas Jogadas: ${games[index].hours}",
+                      "Horas Jogadas: $hours",
                       style: const TextStyle(fontSize: 18.0),
                     ),
                     Text(
-                      "Rating: ${games[index].rating?.toStringAsFixed(1)}", // Exibe o Rating
+                      "Rating: ${rating?.toStringAsFixed(1)}", // Exibe o Rating
                       style: const TextStyle(fontSize: 18.0),
                     ),
                     Text(
-                      "Data de Compra: ${games[index].purchaseDate}",
+                      "Data de Compra: $purchaseDate",
                       style: const TextStyle(fontSize: 18.0),
                     ),
                   ],
@@ -108,36 +183,19 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       onTap: () {
-        showOptions(context, index);
+        showOptions(context, index, docId);
       },
     );
   }
 
-  void showGamePage({Game? game}) async {
-    final recGame = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GamePage(game: game),
-      ),
-    );
-    if (recGame != null) {
-      if (game != null) {
-        await helper.updateGame(recGame);
-      } else {
-        await helper.saveGame(recGame);
-      }
-      getAllGames();
-    }
-  }
-
-  void showOptions(BuildContext context, int index){
+  void showOptions(BuildContext context, int index, String docId){
     showModalBottomSheet(context: context,
     builder: (context){
       return BottomSheet(
         onClosing: () {},
         builder:(context) {
          return Container(
-          padding: EdgeInsets.all(10.0),
+          padding: const EdgeInsets.all(10.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
@@ -146,14 +204,20 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(color: Color.fromARGB(255, 112, 13, 129), fontSize: 20.0 )),
                 onPressed: () {
                   Navigator.pop(context);
-                  showGamePage(game: games[index]);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          GamePage(gameId: docId),
+                    ),
+                  );
                 },
               ),
               TextButton(
                 child: const Text("Excluir",
                 style: TextStyle(color: Colors.red, fontSize: 20.0 )),
                 onPressed: () {
-                  requestPop(index);
+                  _deleteGame(docId);
                 },
               ),
             ],
@@ -163,35 +227,46 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<bool> requestPop(int index) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Excluir Jogo?"),
-          content: const Text("Essa ação não pode ser desfeita."),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                helper.deleteGame(games[index]);
-                setState(() {
-                  games.removeAt(index);
-                  Navigator.pop(context);
-                });
-              },
-              child: const Text("Sim"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text("Cancelar"),
-            ),
-          ],
-        );
-      },
-    );
-    return Future.value(false);
+  Future<void> _logout() async {
+    try {
+      await _auth.signOut();
+      Navigator.pushReplacementNamed(context, '/login');
+    } catch (e) {
+      print("Erro ao fazer logout: $e");
+    }
   }
+
+  Future<void> _deleteGame(String docId) async {
+    showDialog(
+        context: context,
+        builder: (context){
+          return AlertDialog(
+            title: const Text("Excluir Jogo?"),
+            content: const Text("Essa ação não pode ser desfeita."),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _gameService.deleteGame(docId);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Jogo excluído com sucesso!'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+                child: const Text("Sim"),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text("Cancelar"),
+              ),
+            ],
+          );
+        },
+      );
+      return Future.value(false);
+    }
 }

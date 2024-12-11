@@ -1,21 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class GameService {
-  final CollectionReference carrosCollection =
-      FirebaseFirestore.instance.collection('carros');
+  final CollectionReference gamesCollection =
+      FirebaseFirestore.instance.collection('games');
+
+  bool _isRatingValido(double rating) {
+    return rating >= 0 && rating <= 10;
+  }
 
   Future<void> createGame({
     required String name,
     required String genre,
-    required String hours,
-    required String rating,
-    required DateTime purchaseDate,
+    required String hours,  
+    required double rating,
+    required String purchaseDate,
     required String userId,
+
   }) { 
-    if (name.isEmpty || genre.isEmpty || hours.isEmpty || rating.isEmpty) {
+    if (name.isEmpty || genre.isEmpty || hours.isEmpty || purchaseDate.isEmpty || rating.isNaN) {
       throw Exception("Todos os campos são obrigatórios.");
     }
 
+    if (!_isRatingValido(rating)) {
+      throw Exception("A avaliação deve ser entre 0 e 10.");
+    }
     return gamesCollection.add({
       'name': name,
       'genre' : genre,
@@ -35,8 +43,8 @@ class GameService {
     String? name,
     String? genre,
     String? hours,
-    String? rating,
-    DateTime? purchaseDate,
+    double? rating,
+    String? purchaseDate,
   }) {
     Map<String, dynamic> updatedGame = {};
     if (name != null && name.isNotEmpty) {
@@ -45,13 +53,13 @@ class GameService {
     if (genre != null && genre.isNotEmpty) {
       updatedGame['genre'] = genre;
     }
-    if (hours != null) {
+    if (hours != null && hours.isNotEmpty) {
       updatedGame['hours'] = hours;
     }
-    if (rating != null && rating.isNotEmpty) {
+    if (rating != null && rating.isNaN) {
       updatedGame['rating'] = rating;
     }
-    if (purchaseDate != null) {
+    if (purchaseDate != null && purchaseDate.isNotEmpty) {
       updatedGame['purchaseDate'] = purchaseDate;
     }
     return gamesCollection.doc(docId).update(updatedGame);

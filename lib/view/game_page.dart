@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:trab4/service/files_store_service.dart';
+import 'package:trab4/service/game_service.dart';
 
 class GamePage extends StatefulWidget {
   final String gameId;
@@ -14,12 +14,11 @@ class GamePage extends StatefulWidget {
 
 class _GamePageState extends State<GamePage> {
   final GameService _gameService = GameService();
-
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _genreController = TextEditingController();
-  final TextEditingController _ratingController = TextEditingController();
-  final TextEditingController _hoursController = TextEditingController();
-  final TextEditingController _purchaseDateController = TextEditingController();
+  final  _nameController = TextEditingController();
+  final  _genreController = TextEditingController();
+  final  _ratingController = TextEditingController();
+  final  _hoursController = TextEditingController();
+  final  _dateController = TextEditingController();
 
   String? _editingGameId;
   bool _userEdited = false;
@@ -44,9 +43,9 @@ class _GamePageState extends State<GamePage> {
       _editingGameId = gameId;
       _nameController.text = gameData['name'];
       _genreController.text = gameData['genre'];
-      _ratingController.text = gameData['hours'];
-      _hoursController.text = gameData['cor'];
-      _purchaseDateController.text = gameData['purchaseDate'];
+      _hoursController.text = gameData['hours'];
+      _ratingController.text = gameData['rating'].toString();
+      _dateController.text = gameData['purchaseDate'];
     });
   } catch (e) {
     print("Erro ao carregar dados do game: $e");
@@ -57,12 +56,18 @@ class _GamePageState extends State<GamePage> {
   final String name = _nameController.text.trim();
   final String genre = _genreController.text.trim();
   final String hours = _hoursController.text.trim();
-  final String rating = _hoursController.text.trim();
-  final String purchaseDate = _purchaseDateController.text.trim();
+  final double rating = double.tryParse(_ratingController.text) ?? 0;
+  final String purchaseDate = _dateController.text.trim();
 
-  if (name.isEmpty || genre.isEmpty || rating.isEmpty || hours <= 0) {
+  if (name.isEmpty || genre.isEmpty || rating <= 0.0 || purchaseDate.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Preencha todos os campos corretamente.')),
+    );
+    return;
+  }
+  if (rating < 0.0 || rating > 10.0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('O campo Rating deve estar entre 0.0 e 10.0',)),
     );
     return;
   }
@@ -99,9 +104,9 @@ class _GamePageState extends State<GamePage> {
     _clearFields();
     Navigator.pop(context);
   } catch (e) {
-    print('Erro ao salvar game: $e');
+    print('Erro ao salvar Jogo: $e');
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Erro ao salvar o game: $e')),
+      SnackBar(content: Text('Erro ao salvar o jogo: $e')),
     );
   }
 }
@@ -112,7 +117,7 @@ class _GamePageState extends State<GamePage> {
       _genreController.clear();
       _ratingController.clear();
       _hoursController.clear();
-      _purchaseDateController.clear();
+      _dateController.clear();
     });
   }
 
@@ -120,93 +125,162 @@ class _GamePageState extends State<GamePage> {
 
   @override
   Widget build(BuildContext context) {
-    
     return WillPopScope(
-    onWillPop: requestPop,
-    child: Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Text(_editingGameId == null ? 'Adicionar Game' : 'Editar Game', style: TextStyle(color: Colors.white)),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(labelText: 'Name'),
-              onChanged: (text) {
-                _userEdited = true;
-              },
-            ),
-            TextField(
-              controller: _genreController,
-              decoration: InputDecoration(labelText: 'Genre'),
-              onChanged: (text) {
-                _userEdited = true;
-              },
-            ),
-            TextField(
-              controller: _ratingController,
-              decoration: InputDecoration(labelText: 'Rating'),
-              keyboardType: TextInputType.number,
-              onChanged: (text) {
-                _userEdited = true;
-              },
-            ),
-            TextField(
-              controller: _hoursController,
-              decoration: InputDecoration(labelText: 'Hours'),
-              onChanged: (text) {
-                _userEdited = true;
-              },
-            ),
-            TextField(
-              controller: _purchaseDateController,
-              decoration: InputDecoration(labelText: 'PurchaseDate'),
-              onChanged: (text) {
-                _userEdited = true;
-              },
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _saveGame,
-              child: Text('Salvar', style: TextStyle(color: Colors.black)),
-            ),
-          ],
+      onWillPop: requestPop,
+      child: Scaffold(
+        backgroundColor: const Color.fromARGB(255, 112, 13, 129),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          title: Text(_editingGameId == null ? 'Adicionar Jogo' : 'Editar Jogo', style: const TextStyle(color: Color.fromARGB(255, 112, 13, 129))),
+          centerTitle: true,
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _saveGame,
+          backgroundColor: Colors.white,
+          child: const Icon(Icons.save),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(10.0),
+          child: Column(
+            children: <Widget>[
+              TextField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.shade400),
+                  ),
+                  fillColor: Colors.grey.shade200,
+                  filled: true,
+                  hintText: "Nome",
+                ),
+                onChanged: (text) {
+                  _userEdited = true;
+                },
+              ),
+              const SizedBox(height: 10.0),
+              TextField(
+                controller: _genreController,
+                decoration: InputDecoration(
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.shade400),
+                  ),
+                  fillColor: Colors.grey.shade200,
+                  filled: true,
+                  hintText: "Gênero",
+                ),
+                onChanged: (text) {
+                  _userEdited = true;
+                },
+              ),
+              const SizedBox(height: 10.0),
+              TextField(
+                controller: _hoursController,
+                decoration: InputDecoration(
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.shade400),
+                  ),
+                  fillColor: Colors.grey.shade200,
+                  filled: true,
+                  hintText: "Horas Jogadas",
+                ),
+                onChanged: (text) {
+                  _userEdited = true;
+                },
+              ),
+              const SizedBox(height: 10.0),
+              TextField(
+                controller: _ratingController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.shade400),
+                  ),
+                  fillColor: Colors.grey.shade200,
+                  filled: true,
+                  hintText: "Rating (0-10)",
+                ),
+                onChanged: (text) {
+                  _userEdited = true;
+                },
+              ),
+              const SizedBox(height: 10.0),
+              GestureDetector(
+                onTap: () async {
+                  DateTime? pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now(),
+                  );
+                  if (pickedDate != null) {
+                    setState(() {
+                      _dateController.text = "${pickedDate.toLocal()}".split(' ')[0];
+                    });
+                  }
+                },
+                child: AbsorbPointer(
+                  child: TextField(
+                    controller: _dateController,
+                    decoration: InputDecoration(
+                      enabledBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey.shade400),
+                      ),
+                      fillColor: Colors.grey.shade200,
+                      filled: true,
+                      hintText: "Data de Compra",
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
-  Future<bool> requestPop() async {
+
+  Future<bool> requestPop() {
     if (_userEdited) {
-      bool shouldLeave = await showDialog(
+      showDialog(
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text("Descartar Alterações"),
-            content: const Text(
-                "Se sair, as alterações serão perdidas. Deseja continuar?"),
+            title: const Text("Descartar alterações?"),
+            content: const Text("Se sair, as alterações serão perdidas."),
             actions: <Widget>[
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop(false);
+                  Navigator.pop(context);
+                  Navigator.pop(context);
                 },
-                child: const Text("Cancelar"),
+                child: const Text("Sim"),
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop(true);
+                  Navigator.pop(context);
                 },
-                child: const Text("Sim"),
+                child: const Text("Cancelar"),
               ),
             ],
           );
         },
       );
-
-      return Future.value(shouldLeave ?? false);
+      return Future.value(false);
     } else {
       return Future.value(true);
     }
